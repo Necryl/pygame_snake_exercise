@@ -2,6 +2,10 @@ import pygame
 import os
 from fractions import Fraction
 from random import randint
+pygame.mixer.init()
+
+snake_eat_sound = pygame.mixer.Sound(os.path.join('Assets', 'Biting Apple-SoundBible.mp3'))
+snake_hit_sound = pygame.mixer.Sound(os.path.join('Assets', 'mixkit-arcade-mechanical-bling.mp3'))
 
 # Colors
 paint = {
@@ -16,7 +20,7 @@ paint = {
 screen_size = (1280, 720)
 
 aspect_ratio = str(Fraction(screen_size[0], screen_size[1])).split("/")
-grid_scale = 1
+grid_scale = 2
 
 screen = pygame.display.set_mode(screen_size)
 pygame.display.set_caption("Snake eats apples??")
@@ -187,7 +191,7 @@ def apple_random_loc():
         loc = game_grid.random_loc()
         print("apple_random_loc() while loop running...")
         if loc not in list(snake_trail.values()):
-            print("loc not in trail, breaking loop")
+            print("new apple loc not in trail, breaking loop")
             break
     
     return loc
@@ -202,6 +206,8 @@ def play():
     tail_counter = 0
     tail_pause = False
     end = False
+    sound_eat = False
+    sound_hit = False
 
     snake_head.update_bounds(game_grid.random_loc('border'))
     snake_direction = snake_path()
@@ -220,35 +226,45 @@ def play():
 
         carry_on, snake_direction = event_handler(snake_direction)
 
-        if pygame.time.get_ticks() - last_tick >= snake_speed and end == False:
+        if pygame.time.get_ticks() - last_tick >= snake_speed:
             last_tick = pygame.time.get_ticks()        
             
             screen_render()
             pygame.display.update()
+            if sound_eat == True:
+                snake_eat_sound.play()
+                sound_eat = False
+            if sound_hit == True:
+                snake_hit_sound.play()
+                sound_hit = False
 
-            if mark_counter >= 2 and tail_pause == False:
-                snake_tail.update_bounds(snake_trail[tail_counter])
-                snake_tail.spawn()
-                del snake_trail[tail_counter]
-                tail_counter +=1
+            if end == False:
 
-            snake_trail[mark_counter] = snake_head.present_loc
-            mark_counter += 1
-            
-            new_spot = game_grid.move(snake_head.present_loc, snake_direction)
-            if new_spot in list(snake_trail.values()):
-                end = True
-                print("paused: tail in the way")
-            else:
-                snake_head.update_bounds(new_spot)
-                snake_head.spawn()
-            
-            if apple.present_loc == new_spot:
-                tail_pause = True
-                apple.update_bounds(apple_random_loc())
-                apple.spawn()
-            elif tail_pause == True:
-                tail_pause = False
+                if mark_counter >= 2 and tail_pause == False:
+                    snake_tail.update_bounds(snake_trail[tail_counter])
+                    snake_tail.spawn()
+                    del snake_trail[tail_counter]
+                    tail_counter +=1
+
+                snake_trail[mark_counter] = snake_head.present_loc
+                mark_counter += 1
+                
+                new_spot = game_grid.move(snake_head.present_loc, snake_direction)
+                if new_spot in list(snake_trail.values()):
+                    end = True
+                    sound_hit = True
+                    print("PAUSED: tail in the way")
+                else:
+                    snake_head.update_bounds(new_spot)
+                    snake_head.spawn()
+                
+                if apple.present_loc == new_spot:
+                    tail_pause = True
+                    sound_eat = True
+                    apple.update_bounds(apple_random_loc())
+                    apple.spawn()
+                elif tail_pause == True:
+                    tail_pause = False
             
             
 
