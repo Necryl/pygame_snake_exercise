@@ -64,64 +64,101 @@ class Grid(object):
         else:
             raise Exception(f"ERROR: random_loc() function didn't expect argument -> '{mode}'")
 
+
         return result
 
-    def move(self, current_loc, direction):
+    def move(self, current_loc, direction, at_border='tp'):
         
         x = current_loc[0]
         y = current_loc[1]
+        border = False
 
         if direction == 'up':
             if y == 0:
                 y = self.max_height
+                border = True
             else:
                 y -= 1
         elif direction == 'down':
             if y == self.max_height:
                 y = 0
+                border = True
             else:
                 y += 1
         elif direction == 'left':
             if x == 0:
                 x = self.max_width
+                border = True
             else:
                 x -= 1
         elif direction == 'right':
             if x == self.max_width:
                 x = 0
+                border = True
             else:
                 x += 1
         
         result = (x, y)
 
+        if at_border != 'tp' and border == True:
+            if direction == 'up' or direction == 'down':
+                if at_border == 'new_line_f':
+                    result = self.move(result, 'right')
+                elif at_border == 'new_line_b':
+                    result = self.move(result, 'left')
+            elif direction == 'left' or direction == 'right':
+                if at_border == 'new_line_f':
+                    result = self.move(result, 'down')
+                elif at_border == 'new_line_b':
+                    result = self.move(result, 'up')
+
         return result
 
-class Entity(object):
+class Tile(object):
 
     def __init__(self):
         present_loc = None
         visual = (paint["blue"], 'color')
+        bounds = None
 
         self.present_loc = present_loc
         self.visual = visual
+        self.bounds = bounds
     
-    def spawn(self, new_loc=None):
+    def update_bounds(self, new_loc=None):
         if new_loc != None:
             self.present_loc = new_loc
+
+        if self.present_loc != None:
+            self.bounds = pygame.Rect(game_grid.pixelize(self.present_loc), (game_grid.tile_size, game_grid.tile_size))
+        else:
+            raise Exception("ERROR: self.present_loc is 'None'")
+
+    def spawn(self, new_loc=None):
         
+        if new_loc != None:
+            self.update_bounds(new_loc)
+        
+        spawn_point = game_grid.pixelize(self.present_loc)
+
         if self.visual[1] == 'image':
-            spawn_point = game_grid.pixelize(self.present_loc)
             screen.blit(self.visual[0], spawn_point)
         elif self.visual[1] == 'color':
-            pass
+            pygame.draw.rect(screen, self.visual[0], self.bounds)
         else:
             raise Exception(f"ERROR: self.visual[1] contains invalid value '{self.visual[1]}'")
+
+    def move(self, direction, at_border=None):
+
+        self.present_loc = game_grid.move(self.present_loc, direction, at_border)
+        self.update_bounds()
 
 def play():
     carry_on = True
 
     clock = pygame.time.Clock()
-    box.present_loc = (0, 0)
+    apple.update_bounds(game_grid.random_loc())
+    screen.fill(paint["black"])
 
     while carry_on:
 
@@ -145,11 +182,8 @@ def event_handler():
     return result
 
 def screen_render():
-    
-    screen.fill(paint["black"])
 
-    box.present_loc = game_grid.move(box.present_loc, "left")
-    box.spawn()
+    apple.spawn()
 
 def image_loader(name, scale):
 
@@ -165,12 +199,19 @@ def image_loader(name, scale):
 # Creating grid
 game_grid = Grid()
 
-# loading assets
-grid_marker = image_loader("test_grid_loc_marker.png", (game_grid.tile_size, game_grid.tile_size))
-
 # Creating entities
-box = Entity()
-box.visual = (grid_marker, 'image')
+box = Tile()
+box.visual = (image_loader("test_grid_loc_marker.png", (game_grid.tile_size, game_grid.tile_size)), 'image')
+box.present_loc = (0, 0)
+
+cover = Tile()
+cover.visual = (paint['black'], 'color')
+
+apple = Tile()
+apple.visual = (paint['red'], 'color')
+apple.present_loc = (0, 0)
+apple.update_bounds()
+
 
 
 play()
