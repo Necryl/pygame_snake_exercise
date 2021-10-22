@@ -201,6 +201,7 @@ def play():
     mark_counter = 0
     tail_counter = 0
     tail_pause = False
+    end = False
 
     snake_head.update_bounds(game_grid.random_loc('border'))
     snake_direction = snake_path()
@@ -217,7 +218,7 @@ def play():
 
     while carry_on:
 
-        carry_on = event_handler()
+        carry_on, snake_direction = event_handler(snake_direction)
 
         if pygame.time.get_ticks() - last_tick >= snake_speed:
             last_tick = pygame.time.get_ticks()        
@@ -225,44 +226,62 @@ def play():
             screen_render()
             pygame.display.update()
 
-            if mark_counter >= 2 and tail_pause == False:
-                snake_tail.update_bounds(snake_trail[tail_counter])
-                snake_tail.spawn()
-                del snake_trail[tail_counter]
-                tail_counter +=1
+            if end == False:
+                if mark_counter >= 2 and tail_pause == False:
+                    snake_tail.update_bounds(snake_trail[tail_counter])
+                    snake_tail.spawn()
+                    del snake_trail[tail_counter]
+                    tail_counter +=1
 
-            snake_trail[mark_counter] = snake_head.present_loc
-            mark_counter += 1
-            
-            new_spot = game_grid.move(snake_head.present_loc, snake_direction)
-            if new_spot in list(snake_trail.values()):
-                end = True
-                break
-            else:
-                snake_head.update_bounds(new_spot)
-                snake_head.spawn()
-            
-            if apple.present_loc == new_spot:
-                tail_pause = True
-                apple.update_bounds(apple_random_loc())
-            elif tail_pause == True:
-                tail_pause = False
+                snake_trail[mark_counter] = snake_head.present_loc
+                mark_counter += 1
+                
+                new_spot = game_grid.move(snake_head.present_loc, snake_direction)
+                if new_spot in list(snake_trail.values()):
+                    end = True
+                    print("tail in the way")
+                else:
+                    snake_head.update_bounds(new_spot)
+                    snake_head.spawn()
+                
+                if apple.present_loc == new_spot:
+                    tail_pause = True
+                    apple.update_bounds(apple_random_loc())
+                    apple.spawn()
+                elif tail_pause == True:
+                    tail_pause = False
             
             
 
         clock.tick(60)
 
 
-def event_handler():
+def event_handler(snake_direction):
 
     result = True
+    toward = snake_direction
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             result = False
             pygame.quit()
+        
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                toward = 'left'
+            elif event.key == pygame.K_UP:
+                toward = 'up'
+            elif event.key == pygame.K_DOWN:
+                toward = 'down'
+            elif event.key == pygame.K_RIGHT:
+                toward = 'right'
+        
+    new_spot = game_grid.move(snake_head.present_loc, toward)
+    if new_spot in list(snake_trail.values()):
+        toward = snake_direction
+
     
-    return result
+    return result, toward
 
 def screen_render():
 
