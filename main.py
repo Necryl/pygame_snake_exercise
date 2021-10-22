@@ -1,4 +1,3 @@
-import re
 import pygame
 import os
 from fractions import Fraction
