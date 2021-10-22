@@ -1,0 +1,1 @@
+C:\Users\james\.venvs\pygame_env\Scripts\python.exe main.py
