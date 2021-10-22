@@ -11,6 +11,7 @@ paint = {
     "blue": (0, 0, 255)
 }
 
+
 # Window
 screen_size = (1280, 720)
 
@@ -20,6 +21,8 @@ grid_scale = 1
 screen = pygame.display.set_mode(screen_size)
 pygame.display.set_caption("Snake eats apples??")
 
+
+snake_trail = {}
 class Grid(object):
 
     def __init__(self):
@@ -153,23 +156,102 @@ class Tile(object):
         self.present_loc = game_grid.move(self.present_loc, direction, at_border)
         self.update_bounds()
 
+def snake_path():
+    loc = snake_head.present_loc
+    dice = randint(0, 1)
+    if loc == (0, 0):
+        loc = game_grid.move(loc, ('right', 'down')[dice])
+    elif loc == (game_grid.max_width, 0):
+        loc = game_grid.move(loc, ('left', 'down')[dice])
+    elif loc == (game_grid.max_width, game_grid.max_height):
+        loc = game_grid.move(loc, ('left', 'up')[dice])
+    elif loc == (0, game_grid.max_height):
+        loc = game_grid.move(loc, ('right', 'up')[dice])
+    
+    if loc[1] == 0: # if at top
+        direction = 'down'
+    elif loc[0] == game_grid.max_width: # if at right
+        direction = 'left'
+    elif loc[1] == game_grid.max_height: # if at bottom
+        direction = 'up'
+    elif loc[0] == 0: # if at left
+        direction = 'right'
+    
+    snake_head.update_bounds(loc)
+
+    return direction
+
+def apple_random_loc():
+    
+    while True:
+        loc = game_grid.random_loc()
+        print("apple_random_loc() while loop running...")
+        if loc not in list(snake_trail.values()):
+            print("loc not in trail, breaking loop")
+            break
+    
+    return loc
+
+
 def play():
     carry_on = True
 
     clock = pygame.time.Clock()
-    apple.update_bounds(game_grid.random_loc())
+    
+    mark_counter = 0
+    tail_counter = 0
+    tail_pause = False
+
+    snake_head.update_bounds(game_grid.random_loc('border'))
+    snake_direction = snake_path()
+    snake_trail[mark_counter] = snake_head.present_loc
+
+    apple.update_bounds(apple_random_loc())
+
     screen.fill(paint["black"])
+    apple.spawn()
+    snake_head.spawn()
+
+    last_tick = pygame.time.get_ticks()
+    snake_speed = 300
 
     while carry_on:
 
         carry_on = event_handler()
-        
-        screen_render()
-        pygame.display.update()
+
+        if pygame.time.get_ticks() - last_tick >= snake_speed:
+            last_tick = pygame.time.get_ticks()        
+            
+            screen_render()
+            pygame.display.update()
+
+            if mark_counter >= 2 and tail_pause == False:
+                snake_tail.update_bounds(snake_trail[tail_counter])
+                snake_tail.spawn()
+                del snake_trail[tail_counter]
+                tail_counter +=1
+
+            snake_trail[mark_counter] = snake_head.present_loc
+            mark_counter += 1
+            
+            new_spot = game_grid.move(snake_head.present_loc, snake_direction)
+            if new_spot in list(snake_trail.values()):
+                end = True
+                break
+            else:
+                snake_head.update_bounds(new_spot)
+                snake_head.spawn()
+            
+            if apple.present_loc == new_spot:
+                tail_pause = True
+                apple.update_bounds(apple_random_loc())
+            elif tail_pause == True:
+                tail_pause = False
+            
+            
 
         clock.tick(60)
 
-    pygame.quit()
 
 def event_handler():
 
@@ -178,12 +260,13 @@ def event_handler():
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             result = False
+            pygame.quit()
     
     return result
 
 def screen_render():
 
-    apple.spawn()
+    pass
 
 def image_loader(name, scale):
 
@@ -199,7 +282,7 @@ def image_loader(name, scale):
 # Creating grid
 game_grid = Grid()
 
-# Creating entities
+# Creating Tiles
 box = Tile()
 box.visual = (image_loader("test_grid_loc_marker.png", (game_grid.tile_size, game_grid.tile_size)), 'image')
 box.present_loc = (0, 0)
@@ -213,5 +296,11 @@ apple.present_loc = (0, 0)
 apple.update_bounds()
 
 
+snake_head = Tile()
+snake_head.visual = (paint['green'], 'color')
 
-play()
+snake_tail = Tile()
+snake_tail.visual = (paint['black'], 'color')
+
+if __name__ == "__main__":
+    play()
