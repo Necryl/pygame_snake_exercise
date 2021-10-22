@@ -214,42 +214,41 @@ def play():
     snake_head.spawn()
 
     last_tick = pygame.time.get_ticks()
-    snake_speed = 300
+    snake_speed = 150
 
     while carry_on:
 
         carry_on, snake_direction = event_handler(snake_direction)
 
-        if pygame.time.get_ticks() - last_tick >= snake_speed:
+        if pygame.time.get_ticks() - last_tick >= snake_speed and end == False:
             last_tick = pygame.time.get_ticks()        
             
             screen_render()
             pygame.display.update()
 
-            if end == False:
-                if mark_counter >= 2 and tail_pause == False:
-                    snake_tail.update_bounds(snake_trail[tail_counter])
-                    snake_tail.spawn()
-                    del snake_trail[tail_counter]
-                    tail_counter +=1
+            if mark_counter >= 2 and tail_pause == False:
+                snake_tail.update_bounds(snake_trail[tail_counter])
+                snake_tail.spawn()
+                del snake_trail[tail_counter]
+                tail_counter +=1
 
-                snake_trail[mark_counter] = snake_head.present_loc
-                mark_counter += 1
-                
-                new_spot = game_grid.move(snake_head.present_loc, snake_direction)
-                if new_spot in list(snake_trail.values()):
-                    end = True
-                    print("tail in the way")
-                else:
-                    snake_head.update_bounds(new_spot)
-                    snake_head.spawn()
-                
-                if apple.present_loc == new_spot:
-                    tail_pause = True
-                    apple.update_bounds(apple_random_loc())
-                    apple.spawn()
-                elif tail_pause == True:
-                    tail_pause = False
+            snake_trail[mark_counter] = snake_head.present_loc
+            mark_counter += 1
+            
+            new_spot = game_grid.move(snake_head.present_loc, snake_direction)
+            if new_spot in list(snake_trail.values()):
+                end = True
+                print("paused: tail in the way")
+            else:
+                snake_head.update_bounds(new_spot)
+                snake_head.spawn()
+            
+            if apple.present_loc == new_spot:
+                tail_pause = True
+                apple.update_bounds(apple_random_loc())
+                apple.spawn()
+            elif tail_pause == True:
+                tail_pause = False
             
             
 
