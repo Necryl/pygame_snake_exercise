@@ -8,7 +8,7 @@ paint = {
 }
 
 # Window
-screen_size = (900, 700)
+screen_size = (1280, 720)
 screen = pygame.display.set_mode(screen_size)
 pygame.display.set_caption("Snake eats apples??")
 
@@ -24,6 +24,8 @@ def play():
         screen.fill(paint["black"])
 
         pygame.display.update()
+
+        clock.tick(60)
 
     pygame.quit()
 
