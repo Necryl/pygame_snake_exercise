@@ -3,17 +3,24 @@ import os
 from fractions import Fraction
 from random import randint
 pygame.init()
+pygame.font.init()
 pygame.mixer.init()
+
+text_font_impact = pygame.font.SysFont('impact', 80)
+text_font_comic = pygame.font.SysFont('comicsans', 25)
 
 snake_eat_sound = pygame.mixer.Sound(os.path.join('Assets', 'Biting Apple-SoundBible.mp3'))
 snake_hit_sound = pygame.mixer.Sound(os.path.join('Assets', 'mixkit-arcade-mechanical-bling.mp3'))
+
+prompt = 'Snake-Eats-Apples>  '
 
 # Colors
 paint = {
     "black": (0, 0, 0),
     "green": (0, 255, 0),
     "red": (255, 0, 0),
-    "blue": (0, 0, 255)
+    "blue": (0, 0, 255),
+    "white": (255, 255, 255)
 }
 
 
@@ -46,9 +53,13 @@ class Grid(object):
 
     def pixelize(self, loc):
         
-        x = loc[0] * self.tile_size
-        y = loc[1] * self.tile_size
-        result = (x, y)
+        try:
+            x = loc[0] * self.tile_size
+            y = loc[1] * self.tile_size
+            result = (x, y)
+        except:
+            x = loc * self.tile_size
+            result = x
 
         return result
 
@@ -190,30 +201,34 @@ def apple_random_loc():
     
     while True:
         loc = game_grid.random_loc()
-        print("apple_random_loc() while loop running...")
+        print(prompt, "apple_random_loc() while loop running...")
         if loc not in list(snake_trail.values()):
-            print("new apple loc not in trail, breaking loop")
+            print(prompt, "new apple loc not in trail, breaking loop")
             break
     
     return loc
 
 
 def play():
+    print(prompt, "play() -> New start!")
     carry_on = True
 
     clock = pygame.time.Clock()
     
+    global snake_trail
+    snake_trail = {}
+
     mark_counter = 0
     tail_counter = 0
     tail_pause = False
     end = False
     sound_eat = False
     sound_hit = False
+    text_vis = False
 
     snake_head.update_bounds(game_grid.random_loc('border'))
     snake_direction = snake_path()
     snake_trail[mark_counter] = snake_head.present_loc
-
     apple.update_bounds(apple_random_loc())
 
     screen.fill(paint["black"])
@@ -225,13 +240,14 @@ def play():
 
     while carry_on:
 
-        carry_on, snake_direction = event_handler(snake_direction)
+        carry_on, snake_direction, end = event_handler(snake_direction, end)
 
         if pygame.time.get_ticks() - last_tick >= snake_speed:
-            last_tick = pygame.time.get_ticks()        
+            if text_vis != True:
+                last_tick = pygame.time.get_ticks()        
             
-            screen_render()
             pygame.display.update()
+
             if sound_eat == True:
                 snake_eat_sound.play()
                 sound_eat = False
@@ -247,6 +263,8 @@ def play():
                     snake_tail.spawn()
                     del snake_trail[tail_counter]
                     tail_counter +=1
+                elif tail_pause == True:
+                    tail_pause = False
 
                 snake_trail[mark_counter] = snake_head.present_loc
                 mark_counter += 1
@@ -254,8 +272,9 @@ def play():
                 new_spot = game_grid.move(snake_head.present_loc, snake_direction)
                 if new_spot in list(snake_trail.values()):
                     end = True
+                    tail_pause = True
                     sound_hit = True
-                    print("PAUSED: tail in the way")
+                    print(prompt, "PAUSED: tail in the way")
                 else:
                     snake_head.update_bounds(new_spot)
                     snake_head.spawn()
@@ -265,15 +284,23 @@ def play():
                     sound_eat = True
                     apple.update_bounds(apple_random_loc())
                     apple.spawn()
-                elif tail_pause == True:
-                    tail_pause = False
-            
+        if end == True and text_vis == False:
+            screen_render()
+            text_vis = True
+            last_tick = pygame.time.get_ticks()
+        elif end == 'restart':
+            break
+        elif end == True and text_vis == True:
+            if pygame.time.get_ticks() - last_tick >= 1000:
+                end = 'any_key'
             
 
         clock.tick(60)
+    if end == 'restart':
+        play()
 
 
-def event_handler(snake_direction):
+def event_handler(snake_direction, end):
 
     result = True
     toward = snake_direction
@@ -282,8 +309,11 @@ def event_handler(snake_direction):
         if event.type == pygame.QUIT:
             result = False
             pygame.quit()
+            quit()
         
         if event.type == pygame.KEYDOWN:
+            if end == 'any_key':
+                end = 'restart'
             if event.key == pygame.K_LEFT:
                 toward = 'left'
             elif event.key == pygame.K_UP:
@@ -298,11 +328,16 @@ def event_handler(snake_direction):
         toward = snake_direction
 
     
-    return result, toward
+    return result, toward, end
 
 def screen_render():
 
-    pass
+    text = 'Try again?'
+    text_render = text_font_impact.render(text, 1, paint['white'])
+    screen.blit(text_render, (screen_size[0]//2 - text_render.get_width()//2, screen_size[1]//2 - text_render.get_height()//2 - game_grid.pixelize(0.7)))
+    text2 = 'press any key to restart'
+    text_render = text_font_comic.render(text2, 1, paint['white'])
+    screen.blit(text_render, (screen_size[0]//2 - text_render.get_width()//2, screen_size[1]//2 - text_render.get_height()//2))
 
 def image_loader(name, scale):
 
