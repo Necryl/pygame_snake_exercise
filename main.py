@@ -2,6 +2,7 @@ import pygame
 import os
 from fractions import Fraction
 from random import randint
+pygame.init()
 pygame.mixer.init()
 
 snake_eat_sound = pygame.mixer.Sound(os.path.join('Assets', 'Biting Apple-SoundBible.mp3'))
@@ -20,7 +21,7 @@ paint = {
 screen_size = (1280, 720)
 
 aspect_ratio = str(Fraction(screen_size[0], screen_size[1])).split("/")
-grid_scale = 2
+grid_scale = 1
 
 screen = pygame.display.set_mode(screen_size)
 pygame.display.set_caption("Snake eats apples??")
@@ -220,7 +221,7 @@ def play():
     snake_head.spawn()
 
     last_tick = pygame.time.get_ticks()
-    snake_speed = 150
+    snake_speed = 300
 
     while carry_on:
 
@@ -235,6 +236,7 @@ def play():
                 snake_eat_sound.play()
                 sound_eat = False
             if sound_hit == True:
+                pygame.mixer.stop
                 snake_hit_sound.play()
                 sound_hit = False
 
